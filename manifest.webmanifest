@@ -1,0 +1,23 @@
+{
+  "name": "诗词拾遗 · 唐诗宋词毛泽东",
+  "short_name": "诗词拾遗",
+  "description": "先秦 · 汉魏 · 唐宋诗词 · 元明清 · 古文 · 毛泽东 名篇背诵",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#f7f4ee",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
