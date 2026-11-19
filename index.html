@@ -210,6 +210,18 @@
     display:block;
     margin-bottom:6px;
   }
+  .poem-card .poem-body ruby{
+    ruby-position:over;
+    -webkit-ruby-position:over;
+  }
+  .poem-card .poem-body rt{
+    font-size:.52em;
+    color:var(--muted);
+    letter-spacing:0;
+    line-height:1;
+    font-weight:400;
+    user-select:none;
+  }
 
   .empty{
     text-align:center;
@@ -330,8 +342,8 @@
 <body>
 
 <header>
-  <h1>诗词赏析</h1>
-  <p> </p>
+  <h1>诗词拾遗</h1>
+  <p>先 秦 · 汉 魏 · 唐 宋 诗 词 · 元 明 清 · 古 文 · 毛 泽 东</p>
 </header>
 
 <div class="container">
@@ -372,6 +384,7 @@
       </div>
     </div>
     <button class="tag random-tag" id="randomBtn">🎲 随机一首</button>
+    <button class="tag" id="pinyinToggle">拼音：开</button>
   </div>
 
   <div class="divider"></div>
@@ -393,6 +406,7 @@
 
 <footer>诗词原文据公开典籍与权威资料整理 · 仅作学习欣赏</footer>
 
+<script src="vendor/pinyin-pro/index.js"></script>
 <script>
 /* ============================================================
    诗词数据
@@ -3277,7 +3291,13 @@ const POEMS = [
 
 勃，三尺微命，一介书生。无路请缨，等终军之弱冠；有怀投笔，慕宗悫之长风。舍簪笏于百龄，奉晨昏于万里。非谢家之宝树，接孟氏之芳邻。他日趋庭，叨陪鲤对；今兹捧袂，喜托龙门。杨意不逢，抚凌云而自惜；钟期既遇，奏流水以何惭？
 
-呜乎！胜地不常，盛筵难再；兰亭已矣，梓泽丘墟。临别赠言，幸承恩于伟饯；登高作赋，是所望于群公。敢竭鄙怀，恭疏短引；一言均赋，四韵俱成。请洒潘江，各倾陆海云尔。`
+呜乎！胜地不常，盛筵难再；兰亭已矣，梓泽丘墟。临别赠言，幸承恩于伟饯；登高作赋，是所望于群公。敢竭鄙怀，恭疏短引；一言均赋，四韵俱成。请洒潘江，各倾陆海云尔。
+
+《滕王阁诗》
+滕王高阁临江渚，佩玉鸣鸾罢歌舞。
+画栋朝飞南浦云，珠帘暮卷西山雨。
+闲云潭影日悠悠，物换星移几度秋。
+阁中帝子今何在？槛外长江空自流。`
   },
 
   {
@@ -3801,6 +3821,134 @@ function poemKey(p){ return p.title + "|" + p.author; }
 function isRead(p){ return readSet.has(poemKey(p)); }
 
 /* ============================================================
+   拼音标注（pinyin-pro）
+   ============================================================ */
+const PINYIN_KEY = "shici:showPinyin";
+let showPinyin = loadShowPinyin();
+const pinyinToggle = document.getElementById("pinyinToggle");
+const pinyinAvailable = !!(window.pinyinPro && typeof window.pinyinPro.pinyin === "function");
+
+function loadShowPinyin(){
+  try { return localStorage.getItem(PINYIN_KEY) === "1"; } catch (e) { return false; }
+}
+function saveShowPinyin(){
+  try { localStorage.setItem(PINYIN_KEY, showPinyin ? "1" : "0"); } catch (e) {}
+}
+
+// 多音字/破读字人工校正：键为原文片段，值为对应逐字拼音（带声调）。
+// 仅收录高置信度经典读音；存在争议的读音（如「斜」xié/xiá、「吴会」huì/kuài）不予强改。
+const PINYIN_OVERRIDES = {
+  // —— 滕王阁序 / 滕王阁诗 ——
+  "潦水": "lǎo shuǐ", "崇阿": "chóng ē", "都督": "dū dū",
+  "兴尽": "xìng jìn", "舍簪笏": "shě zān hù", "海曲": "hǎi qū",
+  "空余": "kōng yú", "朝飞": "zhāo fēi", "槛外": "jiàn wài",
+  // —— 裳（cháng，下衣） ——
+  "衣裳": "yī cháng", "同裳": "tóng cháng", "帷裳": "wéi cháng",
+  "旧时裳": "jiù shí cháng", "霓裳": "ní cháng", "罗裳": "luó cháng",
+  "沾裳": "zhān cháng", "敛裳": "liǎn cháng",
+  // —— 见（xiàn，显现） ——
+  "见牛羊": "xiàn niú yáng", "见此屋": "xiàn cǐ wū",
+  "外见": "wài xiàn", "忽见": "hū xiàn", "毕见": "bì xiàn",
+  // —— 著（zhuó，穿/戴/遭受） ——
+  "著我": "zhuó wǒ", "耳著": "ěr zhuó", "脚著": "jiǎo zhuó", "更著": "gèng zhuó",
+  // —— 骑（jì，名词：骑兵/一人一马） ——
+  "胡骑": "hú jì", "候骑": "hòu jì", "两骑": "liǎng jì", "铁骑": "tiě jì",
+  "轻骑": "qīng jì", "千骑": "qiān jì", "余骑": "yú jì", "车骑": "chē jì",
+  // —— 胜（shēng，承受不住） ——
+  "不胜簪": "bù shēng zān", "不胜愁": "bù shēng chóu", "不胜寒": "bù shēng hán",
+  // —— 还（huán，归还/返回） ——
+  "还故乡": "huán gù xiāng", "还乡": "huán xiāng", "还家": "huán jiā",
+  "人未还": "rén wèi huán", "一日还": "yī rì huán", "终不还": "zhōng bù huán",
+  "何时还": "hé shí huán", "照我还": "zhào wǒ huán", "还寒": "huán hán",
+  "还于旧都": "huán yú jiù dū", "还军": "huán jūn", "知还": "zhī huán",
+  "乃还": "nǎi huán", "相与还": "xiāng yǔ huán",
+  // —— 挑（tiǎo，拨弄/挑动） ——
+  "挑灯": "tiǎo dēng", "挑促织": "tiǎo cù zhī", "抹复挑": "mǒ fù tiǎo",
+  // —— 重（chóng，重叠） ——
+  "山重水复": "shān chóng shuǐ fù", "重岩": "chóng yán",
+  // —— 长（zhǎng 增长 / cháng 长江） ——
+  "长精神": "zhǎng jīng shén", "长江": "cháng jiāng",
+  // —— 其它破读字 ——
+  "没马蹄": "mò mǎ tí", "的卢": "dí lú", "燕脂": "yān zhī", "燕然": "yān rán",
+  "初为": "chū wéi", "为乐": "wéi lè", "为人": "wéi rén",
+  "为相": "wéi xiàng", "其所为": "qí suǒ wéi",
+  "朝如青丝": "zhāo rú qīng sī", "朝避": "zhāo bì", "朝而往": "zhāo ér wǎng",
+  "朝暮": "zhāo mù", "朝服": "zhāo fú", "朝大夫": "cháo dà fū",
+  "属予": "zhǔ yǔ", "数风流人物": "shǔ fēng liú rén wù",
+  "欲王": "yù wàng", "陈胜王": "chén shèng wàng",
+  "傅说": "fù yuè", "秦王不说": "qín wáng bù yuè",
+  "何间焉": "hé jiàn yān", "间进": "jiàn jìn",
+  "曾益": "zēng yì", "拂士": "bì shì", "便舍船": "biàn shě chuán",
+  "抢地": "qiāng dì", "亡以应": "wú yǐ yìng", "宁有种乎": "nìng yǒu zhǒng hū",
+  "度已失期": "duó yǐ shī qī", "被绮绣": "pī qǐ xiù",
+  "缊袍": "yùn páo", "处其间": "chǔ qí jiān", "容臭": "róng xiù",
+  "期年": "jī nián",
+  "河曲": "hé qū",
+  "将进酒": "qiāng jìn jiǔ", "天姥": "tiān mǔ", "殷岩泉": "yǐn yán quán",
+  "悄无言": "qiǎo wú yán", "纶巾": "guān jīn", "漫卷": "màn juǎn",
+  "应怜": "yīng lián"
+};
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+  ));
+}
+
+function applyOverrides(chars, pinyins){
+  const text = chars.join("");
+  const keys = Object.keys(PINYIN_OVERRIDES).sort((a, b) => b.length - a.length);
+  const locked = new Array(chars.length).fill(false);
+  for (const key of keys){
+    const vals = PINYIN_OVERRIDES[key].split(" ");
+    let idx = 0;
+    while ((idx = text.indexOf(key, idx)) !== -1){
+      for (let k = 0; k < key.length; k++){
+        if (!locked[idx + k]){
+          pinyins[idx + k] = vals[k];
+          locked[idx + k] = true;
+        }
+      }
+      idx += key.length;
+    }
+  }
+  return pinyins;
+}
+
+function annotateText(text){
+  if (!pinyinAvailable) return escapeHtml(text);
+  const out = [];
+  const re = /([㐀-鿿]+)|([^㐀-鿿]+)/g;
+  let m;
+  while ((m = re.exec(text))){
+    if (m[1]){
+      const han = m[1];
+      let pinyins = [];
+      try {
+        pinyins = pinyinPro.pinyin(han, {type:"array", toneType:"symbol", toneSandhi:false});
+      } catch (e) { pinyins = []; }
+      const chars = han.split("");
+      if (Array.isArray(pinyins) && pinyins.length === chars.length){
+        applyOverrides(chars, pinyins);
+      } else {
+        pinyins = chars.map(() => "");
+      }
+      out.push(chars.map((c, i) =>
+        `<ruby>${escapeHtml(c)}<rt>${escapeHtml(pinyins[i] || "")}</rt></ruby>`
+      ).join(""));
+    } else {
+      out.push(escapeHtml(m[2]));
+    }
+  }
+  return out.join("");
+}
+
+function syncPinyinToggle(){
+  pinyinToggle.classList.toggle("active", showPinyin);
+  pinyinToggle.textContent = showPinyin ? "拼音：关" : "拼音：开";
+}
+
+/* ============================================================
    工具函数
    ============================================================ */
 function getAuthorsByCategory(cat){
@@ -3841,10 +3989,13 @@ function getFiltered(){
   });
 }
 
-function bodyToHtml(body){
+function bodyToHtml(body, withPinyin){
   return body
     .split(/\n\s*\n/)
-    .map(stanza => `<span class="stanza">${stanza.replace(/\n/g, "<br>")}</span>`)
+    .map(stanza => {
+      const html = withPinyin ? annotateText(stanza) : escapeHtml(stanza);
+      return `<span class="stanza">${html.replace(/\n/g, "<br>")}</span>`;
+    })
     .join("");
 }
 
@@ -3878,7 +4029,7 @@ function render(){
         <span>${p.dynasty} · ${p.author}</span>
         <span class="cat">${p.category}</span>
       </div>
-      <div class="poem-body">${bodyToHtml(p.body)}</div>
+      <div class="poem-body">${bodyToHtml(p.body, showPinyin)}</div>
     </article>
   `;
   }).join("");
@@ -4011,7 +4162,7 @@ randomBtn.addEventListener("click", () => {
           <span>${pick.dynasty} · ${pick.author}</span>
           <span class="cat">${pick.category}</span>
         </div>
-        <div class="poem-body">${bodyToHtml(pick.body)}</div>
+        <div class="poem-body">${bodyToHtml(pick.body, showPinyin)}</div>
       </article>
     `;
     countEl.textContent = "随机一首";
@@ -4036,6 +4187,18 @@ clearEl.addEventListener("click", () => {
 /* ============================================================
    初始化
    ============================================================ */
+if (pinyinAvailable){
+  pinyinToggle.addEventListener("click", () => {
+    showPinyin = !showPinyin;
+    saveShowPinyin();
+    syncPinyinToggle();
+    render();
+  });
+} else {
+  pinyinToggle.disabled = true;
+  pinyinToggle.title = "拼音库加载失败，暂不可用";
+}
+syncPinyinToggle();
 renderAuthorTags();
 updateReadStats();
 render();
